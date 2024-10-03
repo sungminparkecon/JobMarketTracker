@@ -61,6 +61,10 @@ class Tracker():
         # Set the GUI theme
         sg.theme(settings['gui_theme'])
 
+        # Set font
+        sg.set_options(font=("Helvetica", 16))
+
+
         # Check if we have the key storage
         self._postings_url = os.path.join(
             self._storage_dir, 'all_postings.pkl'
@@ -200,7 +204,7 @@ class Tracker():
                     """
                 )
                 sg.popup_scrolled(help_text, title='help', location=window_location,
-                                  size=(65, 35), font='Helvetica 12')
+                                  size=(65, 35), font='Helvetica 24')
             else:
                 logging.info(f"Got unkown event {event}")
                 return
@@ -445,7 +449,8 @@ class Tracker():
         previous = postings.loc[postings['origin'] == origin, ['origin_id']]
         if previous.shape[0] == 0:
             logging.info(f"First time storing {origin} data, appending")
-            postings = postings.append(df, ignore_index=True)
+            #postings = postings.append(df, ignore_index=True)
+            postings = pd.concat([postings, df], ignore_index=True)
             postings.to_pickle(self._postings_url)
             return True, ''
 
@@ -457,7 +462,8 @@ class Tracker():
                      "==== PLEASE REVIEW ALL DEADLINES ===\n"
                      "They are quite often wrong or not available in the platforms.")
             new_postings = df.loc[new_ix, :].copy()
-            postings = postings.append(new_postings, ignore_index=True)
+            #postings = postings.append(new_postings, ignore_index=True)
+            postings = pd.concat([postings, new_postings], ignore_index=True)
             postings.to_pickle(self._postings_url)
             df = df.loc[~new_ix, :].copy()
 
@@ -510,7 +516,8 @@ class Tracker():
             # In this case we just want to update whatever we have included
             updates['version'] = 0
             df['version'] = 1
-            updates = updates.append(df, ignore_index=True)
+            #updates = updates.append(df, ignore_index=True)
+            updates = pd.concat([updates, df], ignore_index=True)
             updates.sort_values('version', inplace=True)
             updates.drop_duplicates(['origin', 'origin_id', 'version'],
                                     inplace=True, keep='last')
@@ -554,7 +561,7 @@ class Tracker():
         postings.fillna('', inplace=True)
         break_loop = False
         status_updates = []
-        font = 'Helvetica 12'
+        font = 'Helvetica 24'
 
         num_postings = postings.shape[0]
         if num_postings == 0:
@@ -692,7 +699,7 @@ class Tracker():
             )
             if not expired:
                 sel = (
-                    pd.to_datetime(postings['deadline']
+                        pd.to_datetime(postings['deadline']
                                    ) >= pd.Timestamp("today")
                 ) | (
                     postings['deadline'].isna()
@@ -754,7 +761,7 @@ class Tracker():
                 row_colors = [(selected_deadline, color1)]
 
             dates_list_columns = [
-                [sg.Text("Upcoming deadlines:", font='Helvetica 12 underline')],
+                [sg.Text("Upcoming deadlines:", font='Helvetica 24 underline')],
                 [sg.Table(values=deadline_values, enable_events=True,
                           headings=columns, key='-DATE LIST-',
                           auto_size_columns=True, expand_x=True,
@@ -772,7 +779,7 @@ class Tracker():
             if date is not None:
                 applications_text = f"Applications due {date}"
             results_columns = [
-                [sg.Text(applications_text, font="Helvetica 12 underline")],
+                [sg.Text(applications_text, font="Helvetica 24 underline")],
                 [sg.Table(values=application_values, enable_events=True,
                           headings=['Institution', 'Title', 'Status'],
                           auto_size_columns=True,
@@ -944,7 +951,7 @@ class Tracker():
             indicates whether any edit was done to the postings
         """
         status_change = False
-        font = 'Helvetica 12'
+        font = 'Helvetica 24'
 
         row = row.copy()
         # unpack
@@ -1208,7 +1215,7 @@ class Tracker():
         ]]
 
         layout = [
-            [sg.Text("Updates pending review:", font='Helvetica 12 underline')],
+            [sg.Text("Updates pending review:", font='Helvetica 24 underline')],
             [sg.Text("(click on row to edit)")],
             [sg.Column(table_layout)],
             [sg.HSeparator()],
@@ -1266,7 +1273,7 @@ class Tracker():
         """Review and edit an update row as shown in the update menu"""
 
         status_change = False
-        font = 'Helvetica 12'
+        font = 'Helvetica 24'
 
         row = row.copy()
         # Mini
@@ -1356,7 +1363,8 @@ class Tracker():
                 # update the list to update
                 lbl = ", ".join(update_notes)
                 to_update['update_notes'] = lbl
-                updates = updates.append(to_update, ignore_index=True)
+                #updates = updates.append(to_update, ignore_index=True)
+                updates = pd.concat([updates, to_update], ignore_index=True)
                 updates.to_pickle(self._pending_updates_url)
                 new_row = to_update
 
@@ -1505,7 +1513,8 @@ class Tracker():
                     row.to_pickle(self._postings_url)
                 else:
                     all_postings = pd.read_pickle(self._postings_url)
-                    all_postings = all_postings.append(row, ignore_index=True)
+                    #all_postings = all_postings.append(row, ignore_index=True)
+                    all_postings = pd.concat([all_postings, row], ignore_index=True)
                     all_postings.to_pickle(self._postings_url)
                 break
 
@@ -1555,7 +1564,7 @@ class Tracker():
             postings = postings.copy()
             sel = postings['deadline'].notna()
             postings.loc[sel, 'deadline'] =\
-                pd.to_datetime(postings.loc[sel, 'deadline'])
+                pd.to_datetime(postings.loc[sel, 'deadline'], format='mixed')
             postings['deadline'].fillna('Unknown', inplace=True)
             # Get the number of applications per deadline
             today = settings['today']
@@ -1719,7 +1728,7 @@ class Tracker():
             )
             if not expired:
                 sel = (
-                    pd.to_datetime(postings['deadline']
+                    pd.to_datetime(postings['deadline'], format='mixed'
                                    ) >= pd.Timestamp("today")
                 ) | (
                     postings['deadline'].isna()
@@ -1735,7 +1744,7 @@ class Tracker():
             postings = postings.copy()
             sel = postings['deadline'].notna()
             postings.loc[sel, 'deadline'] =\
-                pd.to_datetime(postings.loc[sel, 'deadline'])
+                pd.to_datetime(postings.loc[sel, 'deadline'], format='mixed')
             postings['deadline'].fillna('Unknown', inplace=True)
             # Get the number of applications per deadline
             today = settings['today']
@@ -2086,7 +2095,7 @@ class Tracker():
             indicates whether any edit was done to the postings
         """
         status_change = False
-        font = 'Helvetica 12'
+        font = 'Helvetica 24'
 
         row = row.copy()
         # unpack

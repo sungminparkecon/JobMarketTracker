@@ -23,6 +23,7 @@ settings = {
     # override and set no sources, the system will likely crash and papa will
     # be very mad at you.
     # 'custom_overrides_default': False,
+    'gui_theme': 'Material1'
 }
 
 
